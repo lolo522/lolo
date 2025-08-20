@@ -251,6 +251,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const closeToast = () => {
     setToast(prev => ({ ...prev, isVisible: false }));
   };
+
   return (
     <CartContext.Provider value={{ 
       state, 

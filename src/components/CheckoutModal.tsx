@@ -54,7 +54,6 @@ const DELIVERY_ZONES = {
   'Santiago de Cuba > Santiago de Cuba > Cobre': 800,
   'Santiago de Cuba > Santiago de Cuba > El Parque Céspedes': 200,
   'Santiago de Cuba > Santiago de Cuba > Carretera del Morro': 300,
-
 };
 
 export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: CheckoutModalProps) {
