@@ -175,7 +175,7 @@ export function Cart() {
                             }`}
                           >
                             <CreditCard className="h-3 w-3 inline mr-1" />
-                            Transferencia (+10%)
+                            Transferencia (+{adminContext?.state?.prices?.transferFeePercentage || 10}%)
                           </button>
                         </div>
                       </div>
@@ -231,7 +231,7 @@ export function Cart() {
                         </div>
                         {item.paymentType === 'transfer' && (
                           <div className="text-xs text-orange-600 mt-1">
-                            +10% incluido
+                            +{adminContext?.state?.prices?.transferFeePercentage || 10}% incluido
                           </div>
                         )}
                       </div>
@@ -314,7 +314,7 @@ export function Cart() {
                       ${totalsByPaymentType.transfer.toLocaleString()} CUP
                     </div>
                     <div className="text-sm text-orange-600">
-                      {state.items.filter(item => item.paymentType === 'transfer').length} elementos (+10%)
+                      {state.items.filter(item => item.paymentType === 'transfer').length} elementos (+{adminContext?.state?.prices?.transferFeePercentage || 10}%)
                     </div>
                   </div>
                 </div>
