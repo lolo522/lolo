@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Trash2, Star, Calendar, MessageCircle, ArrowLeft, Edit3, Tv, DollarSign, CreditCard, Calculator } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAdmin } from '../context/AdminContext';
 import { PriceCard } from '../components/PriceCard';
 import { CheckoutModal, OrderData, CustomerInfo } from '../components/CheckoutModal';
 import { sendOrderToWhatsApp } from '../utils/whatsapp';
@@ -9,7 +10,13 @@ import { IMAGE_BASE_URL, POSTER_SIZE } from '../config/api';
 
 export function Cart() {
   const { state, removeItem, clearCart, updatePaymentType, calculateItemPrice, calculateTotalPrice, calculateTotalByPaymentType } = useCart();
+  const { state: adminState } = useAdmin();
   const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
+
+  // Extract price values from admin context
+  const transferFeePercentage = adminState?.prices?.transferFeePercentage || 10;
+  const moviePrice = adminState?.prices?.moviePrice || 80;
+  const seriesPrice = adminState?.prices?.seriesPrice || 300;
 
   const handleCheckout = (orderData: OrderData) => {
     // Calculate totals
@@ -29,7 +36,7 @@ export function Cart() {
       transferTotal: totalsByPaymentType.transfer
     };
     
-    sendOrderToWhatsApp(completeOrderData);
+    sendOrderToWhatsApp(completeOrderData, moviePrice, seriesPrice, transferFeePercentage);
     setShowCheckoutModal(false);
   };
 
@@ -175,7 +182,7 @@ export function Cart() {
                             }`}
                           >
                             <CreditCard className="h-3 w-3 inline mr-1" />
-                            Transferencia (+{adminContext?.state?.prices?.transferFeePercentage || 10}%)
+                            Transferencia (+{transferFeePercentage}%)
                           </button>
                         </div>
                       </div>
@@ -231,7 +238,7 @@ export function Cart() {
                         </div>
                         {item.paymentType === 'transfer' && (
                           <div className="text-xs text-orange-600 mt-1">
-                            +{adminContext?.state?.prices?.transferFeePercentage || 10}% incluido
+                            +{transferFeePercentage}% incluido
                           </div>
                         )}
                       </div>
@@ -314,7 +321,7 @@ export function Cart() {
                       ${totalsByPaymentType.transfer.toLocaleString()} CUP
                     </div>
                     <div className="text-sm text-orange-600">
-                      {state.items.filter(item => item.paymentType === 'transfer').length} elementos (+{adminContext?.state?.prices?.transferFeePercentage || 10}%)
+                      {state.items.filter(item => item.paymentType === 'transfer').length} elementos (+{transferFeePercentage}%)
                     </div>
                   </div>
                 </div>
@@ -338,7 +345,7 @@ export function Cart() {
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {state.items.map((item) => {
                   const itemPrice = calculateItemPrice(item);
-                  const basePrice = item.type === 'movie' ? 80 : (item.selectedSeasons?.length || 1) * 300;
+                  const basePrice = item.type === 'movie' ? moviePrice : (item.selectedSeasons?.length || 1) * seriesPrice;
                   return (
                     <div key={`${item.type}-${item.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
                       <div className="flex-1">
