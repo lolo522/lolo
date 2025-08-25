@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, User, MapPin, Phone, Copy, Check, MessageCircle, Calculator, DollarSign, CreditCard } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, MapPin, Phone, Copy, Check, MessageCircle, Calculator, DollarSign, CreditCard, Bell, Sync, Info } from 'lucide-react';
 import { AdminContext } from '../context/AdminContext';
 
 // Base delivery zones with default option
@@ -34,7 +34,6 @@ interface CheckoutModalProps {
   total: number;
 }
 
-
 export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: CheckoutModalProps) {
   const adminContext = React.useContext(AdminContext);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -48,6 +47,25 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
   const [orderGenerated, setOrderGenerated] = useState(false);
   const [generatedOrder, setGeneratedOrder] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Notificar cuando se abra el modal de checkout
+  useEffect(() => {
+    if (isOpen && adminContext?.addNotification) {
+      adminContext.addNotification({
+        type: 'info',
+        title: 'Checkout Iniciado',
+        message: `Proceso de checkout iniciado con ${items.length} elementos (Total: $${total.toLocaleString()} CUP)`,
+        section: 'Proceso de Checkout',
+        action: 'CHECKOUT_OPENED',
+        details: {
+          itemCount: items.length,
+          totalAmount: total,
+          deliveryZones: adminContext.state.deliveryZones.length
+        }
+      });
+    }
+  }, [isOpen, items.length, total]);
 
   // Get delivery zones from admin context with real-time updates
   const adminZones = adminContext?.state?.deliveryZones || [];
@@ -63,6 +81,7 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
 
   // Get current transfer fee percentage with real-time updates
   const transferFeePercentage = adminContext?.state?.prices?.transferFeePercentage || 10;
+  const notifications = adminContext?.state?.notifications || [];
 
   const isFormValid = customerInfo.fullName.trim() !== '' && 
                      customerInfo.phone.trim() !== '' && 
@@ -71,10 +90,50 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    const oldValue = customerInfo[name as keyof CustomerInfo];
+    
     setCustomerInfo(prev => ({
       ...prev,
       [name]: value
     }));
+
+    // Notificar cambios en la información del cliente
+    if (adminContext?.addNotification && value !== oldValue && value.trim() !== '') {
+      adminContext.addNotification({
+        type: 'info',
+        title: 'Información del Cliente Actualizada',
+        message: `Campo "${name}" actualizado`,
+        section: 'Proceso de Checkout',
+        action: 'CUSTOMER_INFO_UPDATED',
+        details: { field: name, oldValue, newValue: value }
+      });
+    }
+  };
+
+  const handleDeliveryZoneChange = (newZone: string) => {
+    const oldZone = deliveryZone;
+    const oldCost = deliveryCost;
+    const newCost = allZones[newZone] || 0;
+    
+    setDeliveryZone(newZone);
+
+    // Notificar cambio de zona de entrega
+    if (adminContext?.addNotification && newZone !== oldZone) {
+      adminContext.addNotification({
+        type: 'info',
+        title: 'Zona de Entrega Seleccionada',
+        message: `Zona cambiada: "${oldZone}" → "${newZone}" (Costo: $${oldCost} → $${newCost} CUP)`,
+        section: 'Proceso de Checkout',
+        action: 'DELIVERY_ZONE_CHANGED',
+        details: {
+          oldZone,
+          newZone,
+          oldCost,
+          newCost,
+          costDifference: newCost - oldCost
+        }
+      });
+    }
   };
 
   const generateOrderId = () => {
@@ -174,9 +233,27 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
       return;
     }
     
-    const { orderText } = generateOrderText();
+    const { orderText, orderId } = generateOrderText();
     setGeneratedOrder(orderText);
     setOrderGenerated(true);
+
+    // Notificar generación de orden
+    if (adminContext?.addNotification) {
+      adminContext.addNotification({
+        type: 'success',
+        title: 'Orden Generada',
+        message: `Orden ${orderId} generada exitosamente para ${customerInfo.fullName}`,
+        section: 'Proceso de Checkout',
+        action: 'ORDER_GENERATED',
+        details: {
+          orderId,
+          customerName: customerInfo.fullName,
+          itemCount: items.length,
+          totalAmount: finalTotal,
+          deliveryZone
+        }
+      });
+    }
   };
 
   const handleCopyOrder = async () => {
@@ -184,8 +261,30 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
       await navigator.clipboard.writeText(generatedOrder);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+
+      // Notificar copia de orden
+      if (adminContext?.addNotification) {
+        adminContext.addNotification({
+          type: 'info',
+          title: 'Orden Copiada',
+          message: 'Texto de la orden copiado al portapapeles',
+          section: 'Proceso de Checkout',
+          action: 'ORDER_COPIED'
+        });
+      }
     } catch (err) {
       console.error('Error copying to clipboard:', err);
+      
+      if (adminContext?.addNotification) {
+        adminContext.addNotification({
+          type: 'error',
+          title: 'Error al Copiar',
+          message: 'No se pudo copiar la orden al portapapeles',
+          section: 'Proceso de Checkout',
+          action: 'COPY_ERROR',
+          details: { error: err.toString() }
+        });
+      }
     }
   };
 
@@ -222,12 +321,64 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
         transferTotal
       };
 
+      // Notificar envío de orden
+      if (adminContext?.addNotification) {
+        adminContext.addNotification({
+          type: 'success',
+          title: 'Orden Enviada por WhatsApp',
+          message: `Orden ${orderId} enviada exitosamente por WhatsApp a ${customerInfo.fullName}`,
+          section: 'Proceso de Checkout',
+          action: 'ORDER_SENT_WHATSAPP',
+          details: {
+            orderId,
+            customerInfo,
+            totalAmount: finalTotal,
+            deliveryZone,
+            itemCount: items.length
+          }
+        });
+      }
+
       await onCheckout(orderData);
     } catch (error) {
       console.error('Checkout failed:', error);
+      
+      if (adminContext?.addNotification) {
+        adminContext.addNotification({
+          type: 'error',
+          title: 'Error en Checkout',
+          message: 'Error al procesar la orden',
+          section: 'Proceso de Checkout',
+          action: 'CHECKOUT_ERROR',
+          details: { error: error.toString() }
+        });
+      }
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Exportar cuando se cierre el modal
+  const handleClose = () => {
+    if (adminContext?.exportSingleFile) {
+      adminContext.exportSingleFile('CheckoutModal.tsx');
+    }
+    
+    if (adminContext?.addNotification) {
+      adminContext.addNotification({
+        type: 'info',
+        title: 'Checkout Cerrado',
+        message: `Proceso de checkout finalizado ${orderGenerated ? 'con orden generada' : 'sin completar'}`,
+        section: 'Proceso de Checkout',
+        action: 'CHECKOUT_CLOSED',
+        details: {
+          orderGenerated,
+          formCompleted: isFormValid
+        }
+      });
+    }
+    
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -244,25 +395,74 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold">Finalizar Pedido</h2>
-                <p className="text-sm opacity-90">Complete sus datos para procesar el pedido</p>
+                <p className="text-sm opacity-90">Complete sus datos para procesar el pedido - Sincronizado en tiempo real</p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
+            <div className="flex items-center space-x-2">
+              {/* Botón de notificaciones */}
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-2 hover:bg-white/20 rounded-full transition-colors relative"
+                title="Ver notificaciones"
+              >
+                <Bell className="h-5 w-5" />
+                {notifications.filter(n => n.section === 'Proceso de Checkout').length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {notifications.filter(n => n.section === 'Proceso de Checkout').length}
+                  </span>
+                )}
+              </button>
+              
+              {/* Botón de sincronización */}
+              <button
+                onClick={() => adminContext?.exportSingleFile?.('CheckoutModal.tsx')}
+                className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                title="Sincronizar y exportar"
+              >
+                <Sync className="h-5 w-5" />
+              </button>
+              
+              <button
+                onClick={handleClose}
+                className="p-2 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Panel de notificaciones */}
+        {showNotifications && (
+          <div className="bg-blue-50 border-b border-blue-200 p-4 max-h-32 overflow-y-auto">
+            <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+              <Bell className="h-4 w-4 mr-2" />
+              Notificaciones del Checkout
+            </h4>
+            <div className="space-y-1">
+              {notifications
+                .filter(n => n.section === 'Proceso de Checkout')
+                .slice(0, 3)
+                .map(notification => (
+                  <div key={notification.id} className="text-xs bg-white rounded p-2 border border-blue-200">
+                    <span className="font-medium">{notification.title}:</span> {notification.message}
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
           <div className="p-4 sm:p-6">
             {/* Order Summary */}
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-4 sm:p-6 mb-6 border border-blue-200">
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-4 sm:p-6 mb-6 border border-blue-100">
               <div className="flex items-center mb-4">
                 <Calculator className="h-6 w-6 text-blue-600 mr-3" />
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900">Resumen del Pedido</h3>
+                <div className="ml-auto flex items-center text-xs text-blue-600">
+                  <Sync className="h-3 w-3 mr-1 animate-spin" />
+                  <span>Sincronizado</span>
+                </div>
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -295,6 +495,17 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
                   <span className="text-2xl sm:text-3xl font-bold text-green-600">
                     ${finalTotal.toLocaleString()} CUP
                   </span>
+                </div>
+              </div>
+
+              {/* Información de sincronización */}
+              <div className="mt-4 p-3 bg-blue-100 rounded-lg border border-blue-200">
+                <div className="flex items-center text-sm text-blue-800">
+                  <Info className="h-4 w-4 mr-2" />
+                  <span>Precios y zonas sincronizados desde el panel de control</span>
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  Zonas disponibles: {adminZones.length} | Recargo transferencia: {transferFeePercentage}%
                 </div>
               </div>
             </div>
@@ -370,6 +581,9 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
                     <p className="text-sm text-green-700 ml-11">
                       Seleccione su zona para calcular el costo de entrega. Los precios pueden variar según la distancia.
                     </p>
+                    <div className="text-xs text-green-600 mt-2 ml-11">
+                      {adminZones.length} zonas configuradas desde el panel de control
+                    </div>
                   </div>
                   
                   <div>
@@ -378,7 +592,7 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
                     </label>
                     <select
                       value={deliveryZone}
-                      onChange={(e) => setDeliveryZone(e.target.value)}
+                      onChange={(e) => handleDeliveryZoneChange(e.target.value)}
                       required
                       className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all bg-white ${
                         deliveryZone === 'Por favor seleccionar su Barrio/Zona'
@@ -436,7 +650,7 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     type="button"
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="flex-1 px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
                   >
                     Cancelar
