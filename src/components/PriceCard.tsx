@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, Tv, Film, Star, CreditCard, Bell, Sync, Info } from 'lucide-react';
+import { DollarSign, Tv, Film, Star, CreditCard, Bell, FolderSync as Sync, Info } from 'lucide-react';
 import { AdminContext } from '../context/AdminContext';
 
 interface PriceCardProps {

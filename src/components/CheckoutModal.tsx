@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, MapPin, Phone, Copy, Check, MessageCircle, Calculator, DollarSign, CreditCard, Bell, Sync, Info } from 'lucide-react';
+import { X, User, MapPin, Phone, Copy, Check, MessageCircle, Calculator, DollarSign, CreditCard, Bell, FolderSync as Sync, Info } from 'lucide-react';
 import { AdminContext } from '../context/AdminContext';
 
 // Base delivery zones with default option

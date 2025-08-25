@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc, Bell, FileText, Sync } from 'lucide-react';
+import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc, Bell, FileText, FolderSync as Sync } from 'lucide-react';
 import { AdminContext } from '../context/AdminContext';
 
 interface Novela {
