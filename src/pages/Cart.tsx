@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Trash2, Star, Calendar, MessageCircle, ArrowLeft, Edit3, Tv, DollarSign, CreditCard, Calculator } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useAdmin } from '../context/AdminContext';
+import { AdminContext } from '../context/AdminContext';
 import { PriceCard } from '../components/PriceCard';
 import { CheckoutModal, OrderData, CustomerInfo } from '../components/CheckoutModal';
 import { sendOrderToWhatsApp } from '../utils/whatsapp';
@@ -10,13 +10,11 @@ import { IMAGE_BASE_URL, POSTER_SIZE } from '../config/api';
 
 export function Cart() {
   const { state, removeItem, clearCart, updatePaymentType, calculateItemPrice, calculateTotalPrice, calculateTotalByPaymentType } = useCart();
-  const { state: adminState } = useAdmin();
+  const adminContext = React.useContext(AdminContext);
   const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
 
-  // Extract price values from admin context
-  const transferFeePercentage = adminState?.prices?.transferFeePercentage || 10;
-  const moviePrice = adminState?.prices?.moviePrice || 80;
-  const seriesPrice = adminState?.prices?.seriesPrice || 300;
+  // Get current transfer fee percentage with real-time updates
+  const transferFeePercentage = adminContext?.state?.prices?.transferFeePercentage || 10;
 
   const handleCheckout = (orderData: OrderData) => {
     // Calculate totals
@@ -36,7 +34,7 @@ export function Cart() {
       transferTotal: totalsByPaymentType.transfer
     };
     
-    sendOrderToWhatsApp(completeOrderData, moviePrice, seriesPrice, transferFeePercentage);
+    sendOrderToWhatsApp(completeOrderData);
     setShowCheckoutModal(false);
   };
 
@@ -345,7 +343,7 @@ export function Cart() {
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {state.items.map((item) => {
                   const itemPrice = calculateItemPrice(item);
-                  const basePrice = item.type === 'movie' ? moviePrice : (item.selectedSeasons?.length || 1) * seriesPrice;
+                  const basePrice = item.type === 'movie' ? 80 : (item.selectedSeasons?.length || 1) * 300;
                   return (
                     <div key={`${item.type}-${item.id}`} className="bg-white rounded-lg p-3 border border-gray-200">
                       <div className="flex-1">

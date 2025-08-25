@@ -33,8 +33,8 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
   const novelPricePerChapter = adminContext?.state?.prices?.novelPricePerChapter || 5;
   const transferFeePercentage = adminContext?.state?.prices?.transferFeePercentage || 10;
   
-  // Use novels from admin context (includes base novels) - real-time sync
-  const allNovelas = adminNovels.filter(novel => novel.active).map(novel => ({
+  // Use only admin novels - real-time sync from AdminContext
+  const allNovelas = adminNovels.map(novel => ({
     id: novel.id,
     titulo: novel.titulo,
     genero: novel.genero,
