@@ -73,15 +73,16 @@ export function AdminPanel() {
     setPriceForm(state.prices);
   }, [state.prices]);
 
-  const correctPassword = 'admin123';
+  const correctPassword = 'video';
+  const correctUsername = 'root';
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === correctPassword) {
+    if (username === correctUsername && password === correctPassword) {
       login();
       setLoginError('');
     } else {
-      setLoginError('Contraseña incorrecta');
+      setLoginError('Credenciales incorrectas. Usuario: root, Contraseña: video');
     }
   };
 
@@ -497,7 +498,20 @@ export function AdminPanel() {
           <form onSubmit={handleLogin} className="p-6 space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contraseña de Administrador
+                Usuario
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="root"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Contraseña
               </label>
               <div className="relative">
                 <input
@@ -505,7 +519,7 @@ export function AdminPanel() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
-                  placeholder="Ingrese la contraseña"
+                  placeholder="video"
                   required
                 />
                 <button
@@ -625,8 +639,8 @@ export function AdminPanel() {
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Exportar Sistema
-                </button>
+                  Exportar Sistema Clonado
+                <p className="text-blue-100 mt-2">TV a la Carta - Credenciales: root / video</p>
               </div>
             </div>
             

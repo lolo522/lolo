@@ -328,7 +328,7 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
               </div>
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold">Catálogo de Novelas</h2>
-                <p className="text-sm sm:text-base opacity-90">Novelas completas disponibles</p>
+                <p className="text-sm sm:text-base opacity-90">Novelas completas disponibles - Sistema sincronizado</p>
               </div>
             </div>
             <button
@@ -362,7 +362,7 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
                 </div>
                 <div className="flex items-center">
                   <span className="text-2xl mr-3">💳</span>
-                  <p className="font-semibold">Transferencia bancaria: +{transferFeePercentage}% de recargo</p>
+                  <p className="font-semibold">Transferencia bancaria: +{transferFeePercentage}% de recargo (sincronizado)</p>
                 </div>
                 <div className="flex items-center">
                   <span className="text-2xl mr-3">📱</span>
