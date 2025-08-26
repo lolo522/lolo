@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc, Bell, FileText, FolderSync as Sync } from 'lucide-react';
+import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc } from 'lucide-react';
 import { AdminContext } from '../context/AdminContext';
 
 interface Novela {
@@ -27,13 +27,11 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
   const [selectedYear, setSelectedYear] = useState('');
   const [sortBy, setSortBy] = useState<'titulo' | 'año' | 'capitulos'>('titulo');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [showNotifications, setShowNotifications] = useState(false);
 
   // Get novels and prices from admin context with real-time updates
   const adminNovels = adminContext?.state?.novels || [];
   const novelPricePerChapter = adminContext?.state?.prices?.novelPricePerChapter || 5;
   const transferFeePercentage = adminContext?.state?.prices?.transferFeePercentage || 10;
-  const notifications = adminContext?.state?.notifications || [];
   
   // Use only admin novels - real-time sync from AdminContext
   const allNovelas = adminNovels.map(novel => ({
@@ -46,24 +44,6 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
   }));
 
   const phoneNumber = '+5354690878';
-
-  // Notificación cuando se abra el modal
-  useEffect(() => {
-    if (isOpen && adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'info',
-        title: 'Modal de Novelas Abierto',
-        message: `Catálogo de novelas accedido. ${allNovelas.length} novelas disponibles, precio actual: $${novelPricePerChapter} CUP/capítulo`,
-        section: 'Catálogo de Novelas',
-        action: 'OPEN_MODAL',
-        details: {
-          totalNovels: allNovelas.length,
-          pricePerChapter: novelPricePerChapter,
-          transferFee: transferFeePercentage
-        }
-      });
-    }
-  }, [isOpen, allNovelas.length, novelPricePerChapter, transferFeePercentage]);
 
   // Get unique genres
   const uniqueGenres = [...new Set(allNovelas.map(novela => novela.genero))].sort();
@@ -114,50 +94,16 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
   }, [adminNovels.length]);
 
   const handleNovelToggle = (novelaId: number) => {
-    const novela = allNovelas.find(n => n.id === novelaId);
-    const wasSelected = selectedNovelas.includes(novelaId);
-    
     setSelectedNovelas(prev => {
       if (prev.includes(novelaId)) {
-        const newSelection = prev.filter(id => id !== novelaId);
-        
-        // Notificar deselección
-        if (adminContext?.addNotification) {
-          adminContext.addNotification({
-            type: 'info',
-            title: 'Novela Deseleccionada',
-            message: `"${novela?.titulo}" removida de la selección`,
-            section: 'Catálogo de Novelas',
-            action: 'DESELECT_NOVEL',
-            details: { novel: novela, remainingSelected: newSelection.length }
-          });
-        }
-        
-        return newSelection;
+        return prev.filter(id => id !== novelaId);
       } else {
-        const newSelection = [...prev, novelaId];
-        
-        // Notificar selección
-        if (adminContext?.addNotification) {
-          adminContext.addNotification({
-            type: 'success',
-            title: 'Novela Seleccionada',
-            message: `"${novela?.titulo}" agregada a la selección (${novela?.capitulos} capítulos)`,
-            section: 'Catálogo de Novelas',
-            action: 'SELECT_NOVEL',
-            details: { novel: novela, totalSelected: newSelection.length }
-          });
-        }
-        
-        return newSelection;
+        return [...prev, novelaId];
       }
     });
   };
 
   const handlePaymentTypeChange = (novelaId: number, paymentType: 'cash' | 'transfer') => {
-    const novela = allNovelas.find(n => n.id === novelaId);
-    const oldPaymentType = novelasWithPayment.find(n => n.id === novelaId)?.paymentType;
-    
     setNovelasWithPayment(prev => 
       prev.map(novela => 
         novela.id === novelaId 
@@ -165,55 +111,14 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
           : novela
       )
     );
-
-    // Notificar cambio de tipo de pago
-    if (adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'info',
-        title: 'Tipo de Pago Cambiado',
-        message: `"${novela?.titulo}": ${oldPaymentType === 'cash' ? 'Efectivo' : 'Transferencia'} → ${paymentType === 'cash' ? 'Efectivo' : 'Transferencia'}`,
-        section: 'Catálogo de Novelas',
-        action: 'CHANGE_PAYMENT_TYPE',
-        details: { 
-          novel: novela, 
-          oldPaymentType, 
-          newPaymentType: paymentType,
-          priceImpact: paymentType === 'transfer' ? `+${transferFeePercentage}%` : 'Sin recargo'
-        }
-      });
-    }
   };
 
   const selectAllNovelas = () => {
-    const allIds = allNovelas.map(n => n.id);
-    setSelectedNovelas(allIds);
-    
-    if (adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'success',
-        title: 'Todas las Novelas Seleccionadas',
-        message: `${allNovelas.length} novelas seleccionadas para el pedido`,
-        section: 'Catálogo de Novelas',
-        action: 'SELECT_ALL_NOVELS',
-        details: { totalSelected: allNovelas.length }
-      });
-    }
+    setSelectedNovelas(allNovelas.map(n => n.id));
   };
 
   const clearAllNovelas = () => {
-    const previousCount = selectedNovelas.length;
     setSelectedNovelas([]);
-    
-    if (adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'warning',
-        title: 'Selección Limpiada',
-        message: `${previousCount} novelas removidas de la selección`,
-        section: 'Catálogo de Novelas',
-        action: 'CLEAR_ALL_NOVELS',
-        details: { previousCount }
-      });
-    }
   };
 
   const clearFilters = () => {
@@ -222,16 +127,6 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
     setSelectedYear('');
     setSortBy('titulo');
     setSortOrder('asc');
-    
-    if (adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'info',
-        title: 'Filtros Limpiados',
-        message: 'Todos los filtros de búsqueda han sido restablecidos',
-        section: 'Catálogo de Novelas',
-        action: 'CLEAR_FILTERS'
-      });
-    }
   };
 
   // Calculate totals by payment type with real-time pricing
@@ -339,21 +234,6 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-
-    // Notificar descarga
-    if (adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'success',
-        title: 'Catálogo Descargado',
-        message: `Catálogo completo de ${allNovelas.length} novelas descargado exitosamente`,
-        section: 'Catálogo de Novelas',
-        action: 'DOWNLOAD_CATALOG',
-        details: { 
-          totalNovels: allNovelas.length,
-          fileName: 'Catalogo_Novelas_TV_a_la_Carta.txt'
-        }
-      });
-    }
   };
 
   const sendSelectedNovelas = () => {
@@ -421,39 +301,10 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/5354690878?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-
-    // Notificar envío por WhatsApp
-    if (adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'success',
-        title: 'Pedido Enviado por WhatsApp',
-        message: `Pedido de ${selectedNovelas.length} novelas enviado por WhatsApp (Total: $${grandTotal.toLocaleString()} CUP)`,
-        section: 'Catálogo de Novelas',
-        action: 'SEND_WHATSAPP_ORDER',
-        details: {
-          selectedNovels: selectedNovelas.length,
-          totalAmount: grandTotal,
-          cashItems: cashNovelas.length,
-          transferItems: transferNovelas.length,
-          totalChapters: totalCapitulos
-        }
-      });
-    }
   };
 
   const handleCall = () => {
     window.open(`tel:${phoneNumber}`, '_self');
-    
-    if (adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'info',
-        title: 'Llamada Iniciada',
-        message: `Llamada iniciada al número ${phoneNumber}`,
-        section: 'Catálogo de Novelas',
-        action: 'INITIATE_CALL',
-        details: { phoneNumber }
-      });
-    }
   };
 
   const handleWhatsApp = () => {
@@ -461,40 +312,6 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/5354690878?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-
-    if (adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'info',
-        title: 'WhatsApp Abierto',
-        message: 'Conversación de WhatsApp iniciada con el operador',
-        section: 'Catálogo de Novelas',
-        action: 'OPEN_WHATSAPP',
-        details: { phoneNumber }
-      });
-    }
-  };
-
-  // Exportar archivo individual cuando se cierre el modal
-  const handleClose = () => {
-    if (adminContext?.exportSingleFile) {
-      adminContext.exportSingleFile('NovelasModal.tsx');
-    }
-    
-    if (adminContext?.addNotification) {
-      adminContext.addNotification({
-        type: 'info',
-        title: 'Modal de Novelas Cerrado',
-        message: `Sesión finalizada. ${selectedNovelas.length} novelas seleccionadas`,
-        section: 'Catálogo de Novelas',
-        action: 'CLOSE_MODAL',
-        details: { 
-          selectedNovels: selectedNovelas.length,
-          sessionDuration: 'N/A' // Se podría calcular el tiempo de sesión
-        }
-      });
-    }
-    
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -511,64 +328,17 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
               </div>
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold">Catálogo de Novelas</h2>
-                <p className="text-sm sm:text-base opacity-90">
-                  Novelas completas disponibles - Sincronizado en tiempo real
-                </p>
+                <p className="text-sm sm:text-base opacity-90">Novelas completas disponibles</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              {/* Botón de notificaciones */}
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors relative"
-                title="Ver notificaciones"
-              >
-                <Bell className="h-5 w-5" />
-                {notifications.filter(n => n.section === 'Catálogo de Novelas').length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {notifications.filter(n => n.section === 'Catálogo de Novelas').length}
-                  </span>
-                )}
-              </button>
-              
-              {/* Botón de sincronización */}
-              <button
-                onClick={() => adminContext?.exportSingleFile?.('NovelasModal.tsx')}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-                title="Sincronizar y exportar"
-              >
-                <Sync className="h-5 w-5" />
-              </button>
-              
-              <button
-                onClick={handleClose}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
           </div>
         </div>
-
-        {/* Panel de notificaciones */}
-        {showNotifications && (
-          <div className="bg-blue-50 border-b border-blue-200 p-4 max-h-32 overflow-y-auto">
-            <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-              <Bell className="h-4 w-4 mr-2" />
-              Notificaciones Recientes
-            </h4>
-            <div className="space-y-1">
-              {notifications
-                .filter(n => n.section === 'Catálogo de Novelas')
-                .slice(0, 3)
-                .map(notification => (
-                  <div key={notification.id} className="text-xs bg-white rounded p-2 border border-blue-200">
-                    <span className="font-medium">{notification.title}:</span> {notification.message}
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
 
         <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
           <div className="p-4 sm:p-6">
@@ -597,10 +367,6 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
                 <div className="flex items-center">
                   <span className="text-2xl mr-3">📱</span>
                   <p className="font-semibold">Para más información, contacta al número:</p>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">🔄</span>
-                  <p className="font-semibold">Precios sincronizados en tiempo real desde el panel de control</p>
                 </div>
               </div>
 
