@@ -258,7 +258,7 @@ const ModernLogin = ({ onLogin }: { onLogin: (username: string, password: string
 
 // Main AdminPanel Component
 export function AdminPanel() {
-  const { state, login, logout, updatePrices, addDeliveryZone, updateDeliveryZone, deleteDeliveryZone, addNovel, updateNovel, deleteNovel, clearNotifications, exportSystemBackup } = useAdmin();
+  const { state, login, logout, updatePrices, addDeliveryZone, updateDeliveryZone, deleteDeliveryZone, addNovel, updateNovel, deleteNovel, clearNotifications, exportSystemBackup, addNotification } = useAdmin();
   const [activeSection, setActiveSection] = useState<'dashboard' | 'prices' | 'zones' | 'novels' | 'system' | 'notifications'>('dashboard');
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
   const [editingNovel, setEditingNovel] = useState<Novel | null>(null);
@@ -281,6 +281,13 @@ export function AdminPanel() {
   const handlePriceUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     updatePrices(priceForm);
+    addNotification({
+      type: 'success',
+      title: 'Precios actualizados',
+      message: 'Los precios se han guardado y sincronizado correctamente en tiempo real',
+      section: 'Precios',
+      action: 'update'
+    });
   };
 
   const handleAddZone = (e: React.FormEvent) => {
@@ -288,6 +295,13 @@ export function AdminPanel() {
     addDeliveryZone(zoneForm);
     setZoneForm({ name: '', cost: 0, active: true });
     setShowAddZoneForm(false);
+    addNotification({
+      type: 'success',
+      title: 'Zona agregada',
+      message: `La zona "${zoneForm.name}" se ha guardado y sincronizado correctamente`,
+      section: 'Zonas de Entrega',
+      action: 'create'
+    });
   };
 
   const handleUpdateZone = (e: React.FormEvent) => {
@@ -296,6 +310,27 @@ export function AdminPanel() {
       updateDeliveryZone({ ...editingZone, ...zoneForm });
       setEditingZone(null);
       setZoneForm({ name: '', cost: 0, active: true });
+      addNotification({
+        type: 'success',
+        title: 'Zona actualizada',
+        message: `Los cambios en la zona "${zoneForm.name}" se han guardado y sincronizado correctamente`,
+        section: 'Zonas de Entrega',
+        action: 'update'
+      });
+    }
+  };
+
+  const handleDeleteZone = (id: number) => {
+    const zone = state.deliveryZones.find(z => z.id === id);
+    if (window.confirm(`¿Estás seguro de que deseas eliminar la zona "${zone?.name}"?`)) {
+      deleteDeliveryZone(id);
+      addNotification({
+        type: 'warning',
+        title: 'Zona eliminada',
+        message: `La zona "${zone?.name}" se ha eliminado y sincronizado correctamente`,
+        section: 'Zonas de Entrega',
+        action: 'delete'
+      });
     }
   };
 
@@ -304,6 +339,13 @@ export function AdminPanel() {
     addNovel(novelForm);
     setNovelForm({ titulo: '', genero: '', capitulos: 0, año: new Date().getFullYear(), descripcion: '', active: true });
     setShowAddNovelForm(false);
+    addNotification({
+      type: 'success',
+      title: 'Novela agregada',
+      message: `La novela "${novelForm.titulo}" se ha guardado y sincronizado correctamente`,
+      section: 'Gestión de Novelas',
+      action: 'create'
+    });
   };
 
   const handleUpdateNovel = (e: React.FormEvent) => {
@@ -312,6 +354,27 @@ export function AdminPanel() {
       updateNovel({ ...editingNovel, ...novelForm });
       setEditingNovel(null);
       setNovelForm({ titulo: '', genero: '', capitulos: 0, año: new Date().getFullYear(), descripcion: '', active: true });
+      addNotification({
+        type: 'success',
+        title: 'Novela actualizada',
+        message: `Los cambios en la novela "${novelForm.titulo}" se han guardado y sincronizado correctamente`,
+        section: 'Gestión de Novelas',
+        action: 'update'
+      });
+    }
+  };
+
+  const handleDeleteNovel = (id: number) => {
+    const novel = state.novels.find(n => n.id === id);
+    if (window.confirm(`¿Estás seguro de que deseas eliminar la novela "${novel?.titulo}"?`)) {
+      deleteNovel(id);
+      addNotification({
+        type: 'warning',
+        title: 'Novela eliminada',
+        message: `La novela "${novel?.titulo}" se ha eliminado y sincronizado correctamente`,
+        section: 'Gestión de Novelas',
+        action: 'delete'
+      });
     }
   };
 
@@ -628,7 +691,7 @@ export function AdminPanel() {
                     <Edit3 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => deleteDeliveryZone(zone.id)}
+                    onClick={() => handleDeleteZone(zone.id)}
                     className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -804,7 +867,7 @@ export function AdminPanel() {
                     <Edit3 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => deleteNovel(novel.id)}
+                    onClick={() => handleDeleteNovel(novel.id)}
                     className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -852,7 +915,7 @@ export function AdminPanel() {
                 <h4 className="font-semibold text-green-900">Archivos del Sistema</h4>
                 <FileText className="h-5 w-5 text-green-600" />
               </div>
-              <p className="text-green-700 text-sm">6 archivos principales</p>
+              <p className="text-green-700 text-sm">5 archivos principales</p>
             </div>
           </div>
 
@@ -879,11 +942,10 @@ export function AdminPanel() {
             <div className="divide-y divide-gray-200">
               {[
                 { name: 'AdminContext.tsx', description: 'Contexto principal del sistema', status: 'Sincronizado' },
-                { name: 'AdminPanel.tsx', description: 'Panel de control administrativo', status: 'Sincronizado' },
+                { name: 'CartContext.tsx', description: 'Contexto del carrito', status: 'Sincronizado' },
                 { name: 'CheckoutModal.tsx', description: 'Modal de checkout con zonas', status: 'Sincronizado' },
                 { name: 'NovelasModal.tsx', description: 'Modal de catálogo de novelas', status: 'Sincronizado' },
-                { name: 'PriceCard.tsx', description: 'Componente de precios', status: 'Sincronizado' },
-                { name: 'CartContext.tsx', description: 'Contexto del carrito', status: 'Sincronizado' }
+                { name: 'PriceCard.tsx', description: 'Componente de precios', status: 'Sincronizado' }
               ].map((file, index) => (
                 <div key={index} className="p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
