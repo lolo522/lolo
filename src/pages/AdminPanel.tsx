@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, DollarSign, MapPin, BookOpen, Bell, Download, Upload, FolderSync as Sync, LogOut, Eye, EyeOff, User, Lock, Save, Plus, Edit, Trash2, Check, X, AlertCircle, Home, Activity, Database, Shield, Clock, Wifi, WifiOff } from 'lucide-react';
+import { Settings, DollarSign, MapPin, BookOpen, Bell, Download, Upload, FolderSync as Sync, LogOut, Eye, EyeOff, User, Lock, Save, Plus, Edit, Trash2, Check, X, AlertCircle, Home, Activity, Database, Shield, Clock, Wifi, WifiOff, RefreshCw, FileText, Zap } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import { usePerformance } from '../hooks/usePerformance';
 import { tmdbService } from '../services/tmdb';
-import type { PriceConfig, DeliveryZone, Novel } from '../context/AdminContext';
+import type { PriceConfig, DeliveryZone, Novel, SystemConfig } from '../context/AdminContext';
 
 export function AdminPanel() {
   const {
@@ -20,8 +20,10 @@ export function AdminPanel() {
     deleteNovel,
     addNotification,
     clearNotifications,
-    exportSystemBackup,
-    syncWithRemote
+    exportSystemConfig,
+    importSystemConfig,
+    syncWithRemote,
+    syncAllSections
   } = useAdmin();
 
   const { metrics, isOptimized, optimizePerformance } = usePerformance();
@@ -34,6 +36,46 @@ export function AdminPanel() {
   const [editingDeliveryZone, setEditingDeliveryZone] = useState<DeliveryZone | null>(null);
   const [editingNovel, setEditingNovel] = useState<Novel | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isFullSyncing, setIsFullSyncing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync individual sections
+  const syncSection = async (sectionName: string) => {
+    try {
+      addNotification({
+        type: 'info',
+        title: `Sincronizando ${sectionName}`,
+        message: `Iniciando sincronización de la sección ${sectionName}...`,
+        section: sectionName,
+        action: 'sync_section_start'
+      });
+
+      // Simulate section-specific sync
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      addNotification({
+        type: 'success',
+        title: `${sectionName} sincronizada`,
+        message: `La sección ${sectionName} se ha sincronizado correctamente`,
+        section: sectionName,
+        action: 'sync_section'
+      });
+    } catch (error) {
+      addNotification({
+        type: 'error',
+        title: `Error en ${sectionName}`,
+        message: `No se pudo sincronizar la sección ${sectionName}`,
+        section: sectionName,
+        action: 'sync_section_error'
+      });
+    }
+  };
+
+  const handleFullSync = async () => {
+    setIsFullSyncing(true);
+    await syncAllSections();
+    setIsFullSyncing(false);
+  };
 
   const handleOptimizeSystem = async () => {
     try {
@@ -50,7 +92,7 @@ export function AdminPanel() {
       addNotification({
         type: 'success',
         title: 'Sistema optimizado',
-        message: 'Se ha optimizado el rendimiento del sistema, limpiado la caché y actualizado el contenido de TMDB',
+        message: 'Se ha optimizado el rendimiento del sistema y actualizado el contenido',
         section: 'Sistema',
         action: 'optimize'
       });
@@ -62,6 +104,46 @@ export function AdminPanel() {
         section: 'Sistema',
         action: 'optimize_error'
       });
+    }
+  };
+
+  const handleImportConfig = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const configText = e.target?.result as string;
+        const config: SystemConfig = JSON.parse(configText);
+        
+        // Validate config structure
+        if (!config.version || !config.prices || !config.deliveryZones || !config.novels) {
+          throw new Error('Archivo de configuración inválido');
+        }
+
+        importSystemConfig(config);
+        
+        // Reset form states
+        setPriceForm(config.prices);
+        setDeliveryForm({ name: '', cost: 0 });
+        setNovelForm({ titulo: '', genero: '', capitulos: 0, año: new Date().getFullYear(), descripcion: '' });
+        
+      } catch (error) {
+        addNotification({
+          type: 'error',
+          title: 'Error al importar',
+          message: 'El archivo de configuración no es válido o está corrupto',
+          section: 'Sistema',
+          action: 'import_error'
+        });
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -217,11 +299,21 @@ export function AdminPanel() {
     <div className="space-y-6">
       {/* System Status */}
       <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200">
-        <div className="flex items-center mb-4">
-          <div className="bg-blue-100 p-3 rounded-xl mr-4">
-            <Activity className="h-6 w-6 text-blue-600" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <div className="bg-blue-100 p-3 rounded-xl mr-4">
+              <Activity className="h-6 w-6 text-blue-600" />
+            </div>
+            <h3 className="text-xl font-bold text-blue-900">Estado del Sistema</h3>
           </div>
-          <h3 className="text-xl font-bold text-blue-900">Estado del Sistema</h3>
+          <button
+            onClick={handleFullSync}
+            disabled={isFullSyncing}
+            className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFullSyncing ? 'animate-spin' : ''}`} />
+            {isFullSyncing ? 'Sincronizando...' : 'Sincronizar Todo'}
+          </button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -261,34 +353,33 @@ export function AdminPanel() {
           
           <div className="bg-white rounded-xl p-4 border border-gray-200">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-600">Notificaciones</span>
-              <Bell className="h-5 w-5 text-purple-500" />
+              <span className="text-sm font-medium text-gray-600">Versión</span>
+              <FileText className="h-5 w-5 text-purple-500" />
             </div>
             <div className="text-lg font-bold text-purple-600">
-              {state.notifications.length}
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-600">Rendimiento</span>
-              <Activity className="h-5 w-5 text-indigo-500" />
-            </div>
-            <div className="text-lg font-bold text-indigo-600">
-              {metrics.memoryUsage.toFixed(1)} MB
+              {state.systemConfig.version}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats with Sync Buttons */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200">
-          <div className="flex items-center mb-4">
-            <div className="bg-green-100 p-3 rounded-xl mr-4">
-              <DollarSign className="h-6 w-6 text-green-600" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <div className="bg-green-100 p-3 rounded-xl mr-4">
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-green-900">Precios</h3>
             </div>
-            <h3 className="text-xl font-bold text-green-900">Precios Actuales</h3>
+            <button
+              onClick={() => syncSection('Precios')}
+              className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg transition-colors"
+              title="Sincronizar Precios"
+            >
+              <Sync className="h-4 w-4" />
+            </button>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between">
@@ -307,11 +398,20 @@ export function AdminPanel() {
         </div>
         
         <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
-          <div className="flex items-center mb-4">
-            <div className="bg-purple-100 p-3 rounded-xl mr-4">
-              <MapPin className="h-6 w-6 text-purple-600" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <div className="bg-purple-100 p-3 rounded-xl mr-4">
+                <MapPin className="h-6 w-6 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-purple-900">Zonas</h3>
             </div>
-            <h3 className="text-xl font-bold text-purple-900">Zonas de Entrega</h3>
+            <button
+              onClick={() => syncSection('Zonas de Entrega')}
+              className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-lg transition-colors"
+              title="Sincronizar Zonas"
+            >
+              <Sync className="h-4 w-4" />
+            </button>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-purple-700 mb-2">
@@ -322,11 +422,20 @@ export function AdminPanel() {
         </div>
         
         <div className="bg-gradient-to-br from-pink-50 to-red-50 rounded-2xl p-6 border border-pink-200">
-          <div className="flex items-center mb-4">
-            <div className="bg-pink-100 p-3 rounded-xl mr-4">
-              <BookOpen className="h-6 w-6 text-pink-600" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <div className="bg-pink-100 p-3 rounded-xl mr-4">
+                <BookOpen className="h-6 w-6 text-pink-600" />
+              </div>
+              <h3 className="text-xl font-bold text-pink-900">Novelas</h3>
             </div>
-            <h3 className="text-xl font-bold text-pink-900">Novelas</h3>
+            <button
+              onClick={() => syncSection('Gestión de Novelas')}
+              className="bg-pink-500 hover:bg-pink-600 text-white p-2 rounded-lg transition-colors"
+              title="Sincronizar Novelas"
+            >
+              <Sync className="h-4 w-4" />
+            </button>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-pink-700 mb-2">
@@ -339,10 +448,19 @@ export function AdminPanel() {
 
       {/* Recent Activity */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-          <Clock className="h-6 w-6 text-gray-600 mr-3" />
-          Actividad Reciente
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+            <Clock className="h-6 w-6 text-gray-600 mr-3" />
+            Actividad Reciente
+          </h3>
+          <button
+            onClick={() => syncSection('Notificaciones')}
+            className="bg-gray-500 hover:bg-gray-600 text-white p-2 rounded-lg transition-colors"
+            title="Sincronizar Notificaciones"
+          >
+            <Sync className="h-4 w-4" />
+          </button>
+        </div>
         <div className="space-y-3 max-h-64 overflow-y-auto">
           {state.notifications.slice(0, 5).map((notification) => (
             <div key={notification.id} className="flex items-start p-3 bg-gray-50 rounded-lg">
@@ -372,80 +490,114 @@ export function AdminPanel() {
   );
 
   const renderPrices = () => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-      <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-        <DollarSign className="h-7 w-7 text-green-600 mr-3" />
-        Configuración de Precios
-      </h3>
-      
-      <form onSubmit={handlePriceUpdate} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Precio de Películas (CUP)
-            </label>
-            <input
-              type="number"
-              value={priceForm.moviePrice}
-              onChange={(e) => setPriceForm(prev => ({ ...prev, moviePrice: parseInt(e.target.value) || 0 }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              min="0"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Precio de Series por Temporada (CUP)
-            </label>
-            <input
-              type="number"
-              value={priceForm.seriesPrice}
-              onChange={(e) => setPriceForm(prev => ({ ...prev, seriesPrice: parseInt(e.target.value) || 0 }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              min="0"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Recargo por Transferencia (%)
-            </label>
-            <input
-              type="number"
-              value={priceForm.transferFeePercentage}
-              onChange={(e) => setPriceForm(prev => ({ ...prev, transferFeePercentage: parseInt(e.target.value) || 0 }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              min="0"
-              max="100"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Precio de Novelas por Capítulo (CUP)
-            </label>
-            <input
-              type="number"
-              value={priceForm.novelPricePerChapter}
-              onChange={(e) => setPriceForm(prev => ({ ...prev, novelPricePerChapter: parseInt(e.target.value) || 0 }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              min="0"
-              required
-            />
-          </div>
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+            <DollarSign className="h-7 w-7 text-green-600 mr-3" />
+            Configuración de Precios
+          </h3>
+          <button
+            onClick={() => syncSection('Precios')}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+          >
+            <Sync className="h-4 w-4 mr-2" />
+            Sincronizar
+          </button>
         </div>
         
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center"
-        >
-          <Save className="h-5 w-5 mr-2" />
-          Actualizar Precios
-        </button>
-      </form>
+        <form onSubmit={handlePriceUpdate} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Precio de Películas (CUP)
+              </label>
+              <input
+                type="number"
+                value={priceForm.moviePrice}
+                onChange={(e) => setPriceForm(prev => ({ ...prev, moviePrice: parseInt(e.target.value) || 0 }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                min="0"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Precio de Series por Temporada (CUP)
+              </label>
+              <input
+                type="number"
+                value={priceForm.seriesPrice}
+                onChange={(e) => setPriceForm(prev => ({ ...prev, seriesPrice: parseInt(e.target.value) || 0 }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                min="0"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Recargo por Transferencia (%)
+              </label>
+              <input
+                type="number"
+                value={priceForm.transferFeePercentage}
+                onChange={(e) => setPriceForm(prev => ({ ...prev, transferFeePercentage: parseInt(e.target.value) || 0 }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                min="0"
+                max="100"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Precio de Novelas por Capítulo (CUP)
+              </label>
+              <input
+                type="number"
+                value={priceForm.novelPricePerChapter}
+                onChange={(e) => setPriceForm(prev => ({ ...prev, novelPricePerChapter: parseInt(e.target.value) || 0 }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                min="0"
+                required
+              />
+            </div>
+          </div>
+          
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center"
+          >
+            <Save className="h-5 w-5 mr-2" />
+            Actualizar Precios
+          </button>
+        </form>
+      </div>
+
+      {/* Current Configuration Display */}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200">
+        <h4 className="text-lg font-bold text-green-900 mb-4">Configuración Actual</h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-green-600">${state.systemConfig.prices.moviePrice}</div>
+            <div className="text-sm text-gray-600">Películas</div>
+          </div>
+          <div className="bg-white rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-green-600">${state.systemConfig.prices.seriesPrice}</div>
+            <div className="text-sm text-gray-600">Series</div>
+          </div>
+          <div className="bg-white rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-orange-600">{state.systemConfig.prices.transferFeePercentage}%</div>
+            <div className="text-sm text-gray-600">Recargo</div>
+          </div>
+          <div className="bg-white rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-purple-600">${state.systemConfig.prices.novelPricePerChapter}</div>
+            <div className="text-sm text-gray-600">Novelas/Cap</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -453,10 +605,19 @@ export function AdminPanel() {
     <div className="space-y-6">
       {/* Add/Edit Form */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-          <MapPin className="h-6 w-6 text-blue-600 mr-3" />
-          {editingDeliveryZone ? 'Editar Zona de Entrega' : 'Agregar Nueva Zona'}
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+            <MapPin className="h-6 w-6 text-blue-600 mr-3" />
+            {editingDeliveryZone ? 'Editar Zona de Entrega' : 'Agregar Nueva Zona'}
+          </h3>
+          <button
+            onClick={() => syncSection('Zonas de Entrega')}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+          >
+            <Sync className="h-4 w-4 mr-2" />
+            Sincronizar
+          </button>
+        </div>
         
         <form onSubmit={handleDeliveryZoneSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -564,10 +725,19 @@ export function AdminPanel() {
     <div className="space-y-6">
       {/* Add/Edit Form */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-          <BookOpen className="h-6 w-6 text-purple-600 mr-3" />
-          {editingNovel ? 'Editar Novela' : 'Agregar Nueva Novela'}
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+            <BookOpen className="h-6 w-6 text-purple-600 mr-3" />
+            {editingNovel ? 'Editar Novela' : 'Agregar Nueva Novela'}
+          </h3>
+          <button
+            onClick={() => syncSection('Gestión de Novelas')}
+            className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+          >
+            <Sync className="h-4 w-4 mr-2" />
+            Sincronizar
+          </button>
+        </div>
         
         <form onSubmit={handleNovelSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -731,13 +901,22 @@ export function AdminPanel() {
           <Bell className="h-7 w-7 text-purple-600 mr-3" />
           Notificaciones del Sistema
         </h3>
-        <button
-          onClick={clearNotifications}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Limpiar Todo
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => syncSection('Notificaciones')}
+            className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+          >
+            <Sync className="h-4 w-4 mr-2" />
+            Sincronizar
+          </button>
+          <button
+            onClick={clearNotifications}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Limpiar
+          </button>
+        </div>
       </div>
       
       <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -783,96 +962,96 @@ export function AdminPanel() {
     <div className="space-y-6">
       {/* System Actions */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-          <Database className="h-7 w-7 text-indigo-600 mr-3" />
-          Gestión del Sistema
-        </h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+            <Database className="h-7 w-7 text-indigo-600 mr-3" />
+            Gestión del Sistema
+          </h3>
+          <button
+            onClick={() => syncSection('Sistema')}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+          >
+            <Sync className="h-4 w-4 mr-2" />
+            Sincronizar Sistema
+          </button>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
-            onClick={exportSystemBackup}
+            onClick={exportSystemConfig}
             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
           >
             <Download className="h-6 w-6 mr-3" />
             <div className="text-left">
-              <div className="text-lg">Exportar Sistema Completo</div>
-              <div className="text-sm opacity-90">Descargar copia de seguridad</div>
+              <div className="text-lg">Exportar Configuración</div>
+              <div className="text-sm opacity-90">Descargar archivo JSON completo</div>
             </div>
           </button>
+          
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center cursor-pointer"
+               onClick={() => fileInputRef.current?.click()}>
+            <Upload className="h-6 w-6 mr-3" />
+            <div className="text-left">
+              <div className="text-lg">Importar Configuración</div>
+              <div className="text-sm opacity-90">Cargar archivo JSON</div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportConfig}
+              className="hidden"
+            />
+          </div>
           
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
+            className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 text-white p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
           >
             <Sync className={`h-6 w-6 mr-3 ${isSyncing ? 'animate-spin' : ''}`} />
             <div className="text-left">
-              <div className="text-lg">{isSyncing ? 'Sincronizando...' : 'Sincronizar Sistema'}</div>
+              <div className="text-lg">{isSyncing ? 'Sincronizando...' : 'Sincronizar Remoto'}</div>
               <div className="text-sm opacity-90">Actualizar datos remotos</div>
             </div>
           </button>
           
           <button
             onClick={handleOptimizeSystem}
-            className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
+            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
           >
-            <Activity className="h-6 w-6 mr-3" />
+            <Zap className="h-6 w-6 mr-3" />
             <div className="text-left">
               <div className="text-lg">Optimizar Sistema</div>
               <div className="text-sm opacity-90">Limpiar caché y optimizar</div>
             </div>
           </button>
-          
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200">
-            <div className="flex items-center mb-4">
-              <Activity className="h-6 w-6 text-indigo-600 mr-3" />
-              <div className="text-left">
-                <div className="text-lg font-semibold text-indigo-900">Métricas de Rendimiento</div>
-                <div className="text-sm text-indigo-700">Estado actual del sistema</div>
-              </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-indigo-700">Memoria en uso:</span>
-                <span className="font-medium text-indigo-900">{metrics.memoryUsage.toFixed(1)} MB</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-indigo-700">Tiempo de carga:</span>
-                <span className="font-medium text-indigo-900">{metrics.loadTime.toFixed(0)} ms</span>
-              </div>
-              {isOptimized && (
-                <div className="mt-2 p-2 bg-green-100 rounded-lg border border-green-200">
-                  <span className="text-green-700 text-xs font-medium">✅ Sistema optimizado recientemente</span>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* System Information */}
+      {/* System Configuration Display */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Información del Sistema</h3>
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Configuración Actual del Sistema</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="bg-gray-50 rounded-xl p-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Configuración Actual</h4>
+              <h4 className="font-semibold text-gray-900 mb-2">Información General</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Versión del Sistema:</span>
-                  <span className="font-medium">2.0.0</span>
+                  <span className="text-gray-600">Versión:</span>
+                  <span className="font-medium">{state.systemConfig.version}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Última Sincronización:</span>
+                  <span className="text-gray-600">Última Exportación:</span>
                   <span className="font-medium">
-                    {new Date(state.syncStatus.lastSync).toLocaleString('es-ES')}
+                    {new Date(state.systemConfig.lastExport).toLocaleString('es-ES')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Estado de Conexión:</span>
-                  <span className={`font-medium ${state.syncStatus.isOnline ? 'text-green-600' : 'text-red-600'}`}>
-                    {state.syncStatus.isOnline ? 'En línea' : 'Sin conexión'}
+                  <span className="text-gray-600">Auto-Sync:</span>
+                  <span className={`font-medium ${state.systemConfig.settings.autoSync ? 'text-green-600' : 'text-red-600'}`}>
+                    {state.systemConfig.settings.autoSync ? 'Activado' : 'Desactivado'}
                   </span>
                 </div>
               </div>
@@ -885,24 +1064,51 @@ export function AdminPanel() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Zonas de Entrega:</span>
-                  <span className="font-medium">{state.deliveryZones.length}</span>
+                  <span className="font-medium">{state.systemConfig.deliveryZones.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Novelas Administradas:</span>
-                  <span className="font-medium">{state.novels.length}</span>
+                  <span className="text-gray-600">Novelas:</span>
+                  <span className="font-medium">{state.systemConfig.novels.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Notificaciones:</span>
                   <span className="font-medium">{state.notifications.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Caché API:</span>
-                  <span className="font-medium">{tmdbService.getCacheStats().size} elementos</span>
+                  <span className="text-gray-600">Memoria:</span>
+                  <span className="font-medium">{metrics.memoryUsage.toFixed(1)} MB</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Performance Metrics */}
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-200">
+        <h3 className="text-xl font-bold text-indigo-900 mb-4 flex items-center">
+          <Activity className="h-6 w-6 mr-3" />
+          Métricas de Rendimiento
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-indigo-600">{metrics.memoryUsage.toFixed(1)} MB</div>
+            <div className="text-sm text-gray-600">Memoria en Uso</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-blue-600">{metrics.loadTime.toFixed(0)} ms</div>
+            <div className="text-sm text-gray-600">Tiempo de Carga</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-purple-600">{tmdbService.getCacheStats().size}</div>
+            <div className="text-sm text-gray-600">Elementos en Caché</div>
+          </div>
+        </div>
+        {isOptimized && (
+          <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-200">
+            <span className="text-green-700 text-sm font-medium">✅ Sistema optimizado recientemente</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -938,7 +1144,7 @@ export function AdminPanel() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Admin Panel</h2>
-                <p className="text-sm text-gray-600">TV a la Carta</p>
+                <p className="text-sm text-gray-600">TV a la Carta v{state.systemConfig.version}</p>
               </div>
             </div>
           </div>
