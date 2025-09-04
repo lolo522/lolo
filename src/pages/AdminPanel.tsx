@@ -21,6 +21,7 @@ export function AdminPanel() {
     addNotification,
     clearNotifications,
     exportSystemConfig,
+    exportCompleteSourceCode,
     importSystemConfig,
     syncWithRemote,
     syncAllSections
