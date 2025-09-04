@@ -498,15 +498,10 @@ export function AdminPanel() {
             Configuración de Precios
           </h3>
           <button
-            onClick={() => {
-              // Trigger price sync
-              window.dispatchEvent(new CustomEvent('admin_state_change', { 
-                detail: { type: 'prices', timestamp: new Date().toISOString() } 
-              }));
-            }}
-            className="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+            onClick={() => syncSection('Precios')}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
           >
-            <RefreshCw className="h-4 w-4 mr-1" />
+            <Sync className="h-4 w-4 mr-2" />
             Sincronizar
           </button>
         </div>
@@ -908,10 +903,15 @@ export function AdminPanel() {
         </h3>
         <div className="flex space-x-2">
           <button
-            onClick={() => syncSection('Notificaciones')}
-            className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+            onClick={() => {
+              // Trigger notifications sync
+              window.dispatchEvent(new CustomEvent('admin_state_change', { 
+                detail: { type: 'notifications', timestamp: new Date().toISOString() } 
+              }));
+            }}
+            className="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
           >
-            <Sync className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-1" />
             Sincronizar
           </button>
           <button
