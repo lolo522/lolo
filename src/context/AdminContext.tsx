@@ -106,6 +106,7 @@ interface AdminContextType {
   clearNotifications: () => void;
   exportSystemConfig: () => void;
   importSystemConfig: (config: SystemConfig) => void;
+  exportCompleteSourceCode: () => void;
   syncWithRemote: () => Promise<void>;
   broadcastChange: (change: any) => void;
   syncAllSections: () => Promise<void>;
@@ -607,10 +608,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       addNotification({
         type: 'info',
-        title: 'Exportación iniciada',
-        message: 'Generando configuración completa del sistema...',
+        title: 'Exportación de configuración iniciada',
+        message: 'Generando archivo de configuración JSON...',
         section: 'Sistema',
-        action: 'export_start'
+        action: 'export_config_start'
       });
 
       // Create comprehensive system configuration
@@ -651,18 +652,50 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       addNotification({
         type: 'success',
         title: 'Configuración exportada',
-        message: 'La configuración completa del sistema se ha exportado correctamente',
+        message: 'La configuración JSON se ha exportado correctamente',
         section: 'Sistema',
-        action: 'export'
+        action: 'export_config'
       });
     } catch (error) {
       console.error('Error exporting system config:', error);
       addNotification({
         type: 'error',
-        title: 'Error en la exportación',
-        message: 'No se pudo exportar la configuración del sistema',
+        title: 'Error en la exportación de configuración',
+        message: 'No se pudo exportar la configuración JSON',
         section: 'Sistema',
-        action: 'export_error'
+        action: 'export_config_error'
+      });
+    }
+  };
+
+  const exportCompleteSourceCode = async () => {
+    try {
+      addNotification({
+        type: 'info',
+        title: 'Exportación de código fuente iniciada',
+        message: 'Generando sistema completo con código fuente...',
+        section: 'Sistema',
+        action: 'export_source_start'
+      });
+
+      const { generateCompleteSourceCode } = await import('../utils/sourceCodeGenerator');
+      await generateCompleteSourceCode(state.systemConfig);
+
+      addNotification({
+        type: 'success',
+        title: 'Código fuente exportado',
+        message: 'El sistema completo se ha exportado como código fuente',
+        section: 'Sistema',
+        action: 'export_source'
+      });
+    } catch (error) {
+      console.error('Error exporting source code:', error);
+      addNotification({
+        type: 'error',
+        title: 'Error en la exportación de código',
+        message: 'No se pudo exportar el código fuente completo',
+        section: 'Sistema',
+        action: 'export_source_error'
       });
     }
   };
@@ -819,6 +852,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         clearNotifications,
         exportSystemConfig,
         importSystemConfig,
+        exportCompleteSourceCode,
         syncWithRemote,
         broadcastChange,
         syncAllSections,
