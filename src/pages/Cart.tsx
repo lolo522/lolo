@@ -233,7 +233,7 @@ export function Cart() {
                         </div>
                         {item.paymentType === 'transfer' && (
                           <div className="text-xs text-orange-600 mt-1">
-                            +10% incluido
+                            +{adminContext?.state?.prices?.transferFeePercentage || 10}% incluido
                           </div>
                         )}
                       </div>
@@ -316,7 +316,7 @@ export function Cart() {
                       ${totalsByPaymentType.transfer.toLocaleString()} CUP
                     </div>
                     <div className="text-sm text-orange-600">
-                      {state.items.filter(item => item.paymentType === 'transfer').length} elementos (+10%)
+                      {state.items.filter(item => item.paymentType === 'transfer').length} elementos (+{adminContext?.state?.prices?.transferFeePercentage || 10}%)
                     </div>
                   </div>
                 </div>
@@ -369,6 +369,8 @@ export function Cart() {
                         {item.paymentType === 'transfer' && (
                           <p className="text-xs text-gray-500">
                             Base: ${basePrice.toLocaleString()} CUP
+                            <br />
+                            Recargo (+{adminContext?.state?.prices?.transferFeePercentage || 10}%): +${(itemPrice - basePrice).toLocaleString()} CUP
                           </p>
                         )}
                         {item.type === 'tv' && item.selectedSeasons && item.selectedSeasons.length > 0 && (

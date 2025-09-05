@@ -154,12 +154,16 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
   const generateOrderText = () => {
     const orderId = generateOrderId();
     const { cashTotal, transferTotal } = calculateTotals();
-    const transferFee = transferTotal - items.filter(item => item.paymentType === 'transfer').reduce((sum, item) => {
+    
+    // Calcular el recargo de transferencia correctamente usando el porcentaje actual
+    const transferBaseTotal = items.filter(item => item.paymentType === 'transfer').reduce((sum, item) => {
       const moviePrice = adminContext?.state?.prices?.moviePrice || 80;
       const seriesPrice = adminContext?.state?.prices?.seriesPrice || 300;
       const basePrice = item.type === 'movie' ? moviePrice : (item.selectedSeasons?.length || 1) * seriesPrice;
       return sum + basePrice;
     }, 0);
+    
+    const transferFee = transferTotal - transferBaseTotal;
 
     // Format product list with real-time pricing
     const itemsList = items
@@ -195,12 +199,12 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
     }
     if (transferTotal > 0) {
       orderText += `🏦 Transferencia: $${transferTotal.toLocaleString()} CUP\n`;
+      if (transferBaseTotal > 0) {
+        orderText += `   • Base: $${transferBaseTotal.toLocaleString()} CUP\n`;
+        orderText += `   • Recargo (+${transferFeePercentage}%): +$${transferFee.toLocaleString()} CUP\n`;
+      }
     }
     orderText += `• *Subtotal Contenido: $${total.toLocaleString()} CUP*\n`;
-    
-    if (transferFee > 0) {
-      orderText += `• Recargo transferencia (${transferFeePercentage}%): +$${transferFee.toLocaleString()} CUP\n`;
-    }
     
     orderText += `🚚 Entrega (${deliveryZone.split(' > ')[2]}): +$${deliveryCost.toLocaleString()} CUP\n`;
     orderText += `\n🎯 *TOTAL FINAL: $${finalTotal.toLocaleString()} CUP*\n\n`;

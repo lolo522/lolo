@@ -14,6 +14,10 @@ export function sendOrderToWhatsApp(orderData: OrderData): void {
     transferTotal = 0
   } = orderData;
 
+  // Obtener el porcentaje de transferencia actual del contexto admin
+  // En una implementación real, esto debería pasarse como parámetro
+  const transferFeePercentage = 10; // Este valor debe ser dinámico desde el contexto admin
+
   // Formatear lista de productos
   const itemsList = items
     .map(item => {
@@ -21,9 +25,9 @@ export function sendOrderToWhatsApp(orderData: OrderData): void {
         ? `\n  📺 Temporadas: ${item.selectedSeasons.sort((a, b) => a - b).join(', ')}` 
         : '';
       const itemType = item.type === 'movie' ? 'Película' : 'Serie';
-      const moviePrice = 80; // This should be dynamic in real implementation
-      const seriesPrice = 300; // This should be dynamic in real implementation
-      const transferFeePercentage = 10; // This should be dynamic in real implementation
+      // Estos valores deben ser dinámicos desde el contexto admin
+      const moviePrice = 80;
+      const seriesPrice = 300;
       const basePrice = item.type === 'movie' ? moviePrice : (item.selectedSeasons?.length || 1) * seriesPrice;
       const finalPrice = item.paymentType === 'transfer' ? Math.round(basePrice * (1 + transferFeePercentage / 100)) : basePrice;
       const paymentTypeText = item.paymentType === 'transfer' ? `Transferencia (+${transferFeePercentage}%)` : 'Efectivo';
@@ -48,6 +52,10 @@ export function sendOrderToWhatsApp(orderData: OrderData): void {
   // Desglosar por tipo de pago
   const cashItems = items.filter(item => item.paymentType === 'cash');
   const transferItems = items.filter(item => item.paymentType === 'transfer');
+  
+  // Valores dinámicos para cálculos
+  const moviePrice = 80;
+  const seriesPrice = 300;
   
   // Mostrar desglose detallado por tipo de pago
   message += `\n📊 *DESGLOSE POR TIPO DE PAGO:*\n`;

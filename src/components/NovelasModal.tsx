@@ -803,3 +803,6 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
     </div>
   );
 }
+
+// Asegurar que la exportación esté disponible
+export default NovelasModal;
