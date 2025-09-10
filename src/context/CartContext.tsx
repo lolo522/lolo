@@ -3,7 +3,7 @@ import { Toast } from '../components/Toast';
 import type { CartItem } from '../types/movie';
 
 // PRECIOS EMBEBIDOS - Generados automáticamente
-const EMBEDDED_PRICES = {
+let EMBEDDED_PRICES = {
   "moviePrice": 80,
   "seriesPrice": 300,
   "transferFeePercentage": 10,
@@ -97,11 +97,43 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [], total: 0 });
+  const [currentPrices, setCurrentPrices] = useState(EMBEDDED_PRICES);
   const [toast, setToast] = React.useState<{
     message: string;
     type: 'success' | 'error';
     isVisible: boolean;
   }>({ message: '', type: 'success', isVisible: false });
+
+  // Listen for price updates from admin panel
+  useEffect(() => {
+    // Load initial prices
+    try {
+      const adminState = localStorage.getItem('admin_system_state');
+      if (adminState) {
+        const state = JSON.parse(adminState);
+        if (state.prices) {
+          setCurrentPrices(state.prices);
+          EMBEDDED_PRICES = state.prices;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading prices:', error);
+    }
+
+    // Listen for real-time updates
+    const handlePricesUpdate = (event: CustomEvent) => {
+      if (event.detail.prices) {
+        setCurrentPrices(event.detail.prices);
+        EMBEDDED_PRICES = event.detail.prices;
+      }
+    };
+
+    window.addEventListener('admin_config_updated', handlePricesUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('admin_config_updated', handlePricesUpdate as EventListener);
+    };
+  }, []);
 
   // Clear cart on page refresh
   useEffect(() => {
@@ -205,10 +237,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const calculateItemPrice = (item: SeriesCartItem): number => {
-    // Use embedded prices
-    const moviePrice = EMBEDDED_PRICES.moviePrice;
-    const seriesPrice = EMBEDDED_PRICES.seriesPrice;
-    const transferFeePercentage = EMBEDDED_PRICES.transferFeePercentage;
+    // Use current prices (updated in real-time)
+    const moviePrice = currentPrices.moviePrice;
+    const seriesPrice = currentPrices.seriesPrice;
+    const transferFeePercentage = currentPrices.transferFeePercentage;
     
     if (item.type === 'movie') {
       const basePrice = moviePrice;
@@ -227,9 +259,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const calculateTotalByPaymentType = (): { cash: number; transfer: number } => {
-    const moviePrice = EMBEDDED_PRICES.moviePrice;
-    const seriesPrice = EMBEDDED_PRICES.seriesPrice;
-    const transferFeePercentage = EMBEDDED_PRICES.transferFeePercentage;
+    const moviePrice = currentPrices.moviePrice;
+    const seriesPrice = currentPrices.seriesPrice;
+    const transferFeePercentage = currentPrices.transferFeePercentage;
     
     return state.items.reduce((totals, item) => {
       const basePrice = item.type === 'movie' ? moviePrice : (item.selectedSeasons?.length || 1) * seriesPrice;

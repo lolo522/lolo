@@ -11,8 +11,61 @@ const EMBEDDED_CONFIG = {
     "transferFeePercentage": 10,
     "novelPricePerChapter": 5
   },
-  "deliveryZones": [],
-  "novels": [],
+  "deliveryZones": [
+    {
+      "id": 1,
+      "name": "Santiago de Cuba > Santiago de Cuba > Centro Histórico",
+      "cost": 50,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "Santiago de Cuba > Santiago de Cuba > Vista Alegre",
+      "cost": 75,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "Santiago de Cuba > Santiago de Cuba > Reparto Sueño",
+      "cost": 100,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "novels": [
+    {
+      "id": 1,
+      "titulo": "El Amor Eterno",
+      "genero": "Romance",
+      "capitulos": 120,
+      "año": 2023,
+      "descripcion": "Una historia de amor que trasciende el tiempo",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "titulo": "Secretos del Corazón",
+      "genero": "Drama",
+      "capitulos": 95,
+      "año": 2024,
+      "descripcion": "Drama familiar lleno de secretos y revelaciones",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "titulo": "La Venganza Perfecta",
+      "genero": "Suspenso",
+      "capitulos": 80,
+      "año": 2023,
+      "descripcion": "Un thriller psicológico lleno de giros inesperados",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
   "settings": {
     "autoSync": true,
     "syncInterval": 300000,
@@ -462,6 +515,16 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('admin_system_state', JSON.stringify(state));
       localStorage.setItem('system_config', JSON.stringify(state.systemConfig));
       syncService.broadcast(state);
+      
+      // Broadcast specific changes to components
+      window.dispatchEvent(new CustomEvent('admin_config_updated', {
+        detail: {
+          prices: state.prices,
+          deliveryZones: state.deliveryZones,
+          novels: state.novels,
+          timestamp: new Date().toISOString()
+        }
+      }));
     } catch (error) {
       console.error('Error saving state:', error);
     }
@@ -531,7 +594,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       section: 'Zonas de Entrega',
       action: 'create'
     });
-    broadcastChange({ type: 'delivery_zone_add', data: zone });
+    
+    // Broadcast immediate change
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('delivery_zones_updated', {
+        detail: { zones: [...state.deliveryZones, { ...zone, id: Date.now(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }] }
+      }));
+    }, 100);
   };
 
   const updateDeliveryZone = (zone: DeliveryZone) => {
@@ -568,7 +637,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       section: 'Gestión de Novelas',
       action: 'create'
     });
-    broadcastChange({ type: 'novel_add', data: novel });
+    
+    // Broadcast immediate change
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('novels_updated', {
+        detail: { novels: [...state.novels, { ...novel, id: Date.now(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }] }
+      }));
+    }, 100);
   };
 
   const updateNovel = (novel: Novel) => {

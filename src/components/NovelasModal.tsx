@@ -2,10 +2,41 @@ import React, { useState, useEffect } from 'react';
 import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc, Smartphone } from 'lucide-react';
 
 // CATÁLOGO DE NOVELAS EMBEBIDO - Generado automáticamente
-const EMBEDDED_NOVELS = [];
+const EMBEDDED_NOVELS = [
+  {
+    "id": 1,
+    "titulo": "El Amor Eterno",
+    "genero": "Romance",
+    "capitulos": 120,
+    "año": 2023,
+    "descripcion": "Una historia de amor que trasciende el tiempo",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "titulo": "Secretos del Corazón",
+    "genero": "Drama",
+    "capitulos": 95,
+    "año": 2024,
+    "descripcion": "Drama familiar lleno de secretos y revelaciones",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  },
+  {
+    "id": 3,
+    "titulo": "La Venganza Perfecta",
+    "genero": "Suspenso",
+    "capitulos": 80,
+    "año": 2023,
+    "descripcion": "Un thriller psicológico lleno de giros inesperados",
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "updatedAt": "2025-01-01T00:00:00.000Z"
+  }
+];
 
 // PRECIOS EMBEBIDOS
-const EMBEDDED_PRICES = {
+let EMBEDDED_PRICES = {
   "moviePrice": 80,
   "seriesPrice": 300,
   "transferFeePercentage": 10,
@@ -30,6 +61,8 @@ interface NovelasModalProps {
 export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
   const [selectedNovelas, setSelectedNovelas] = useState<number[]>([]);
   const [novelasWithPayment, setNovelasWithPayment] = useState<Novela[]>([]);
+  const [adminNovels, setAdminNovels] = useState<Novela[]>([]);
+  const [currentPrices, setCurrentPrices] = useState(EMBEDDED_PRICES);
   const [showNovelList, setShowNovelList] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
@@ -37,14 +70,79 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
   const [sortBy, setSortBy] = useState<'titulo' | 'año' | 'capitulos'>('titulo');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Get novels and prices from embedded configuration
-  const adminNovels = EMBEDDED_NOVELS;
-  const novelPricePerChapter = EMBEDDED_PRICES.novelPricePerChapter;
-  const transferFeePercentage = EMBEDDED_PRICES.transferFeePercentage;
+  // Listen for admin updates
+  useEffect(() => {
+    // Load initial admin novels
+    try {
+      const adminState = localStorage.getItem('admin_system_state');
+      if (adminState) {
+        const state = JSON.parse(adminState);
+        setAdminNovels(state.novels || []);
+        if (state.prices) {
+          setCurrentPrices(state.prices);
+          EMBEDDED_PRICES = state.prices;
+        }
+      } else {
+        setAdminNovels(EMBEDDED_NOVELS);
+      }
+    } catch (error) {
+      console.error('Error loading admin novels:', error);
+      setAdminNovels(EMBEDDED_NOVELS);
+    }
+
+    // Listen for real-time updates
+    const handleNovelsUpdate = (event: CustomEvent) => {
+      setAdminNovels(event.detail.novels || []);
+    };
+
+    const handleAdminConfigUpdate = (event: CustomEvent) => {
+      if (event.detail.novels) {
+        setAdminNovels(event.detail.novels);
+      }
+      if (event.detail.prices) {
+        setCurrentPrices(event.detail.prices);
+        EMBEDDED_PRICES = event.detail.prices;
+      }
+    };
+
+    window.addEventListener('novels_updated', handleNovelsUpdate as EventListener);
+    window.addEventListener('admin_config_updated', handleAdminConfigUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('novels_updated', handleNovelsUpdate as EventListener);
+      window.removeEventListener('admin_config_updated', handleAdminConfigUpdate as EventListener);
+    };
+  }, []);
+
+  const novelPricePerChapter = currentPrices.novelPricePerChapter;
+  const transferFeePercentage = currentPrices.transferFeePercentage;
   
   // Base novels list
   const defaultNovelas: Novela[] = [
-    
+    {
+      id: 101,
+      titulo: "Corazones Divididos",
+      genero: "Romance",
+      capitulos: 85,
+      año: 2024,
+      descripcion: "Una historia de amor complicada entre dos mundos diferentes"
+    },
+    {
+      id: 102,
+      titulo: "El Misterio de la Mansión",
+      genero: "Misterio",
+      capitulos: 110,
+      año: 2023,
+      descripcion: "Un thriller psicológico en una mansión llena de secretos"
+    },
+    {
+      id: 103,
+      titulo: "Pasiones Prohibidas",
+      genero: "Drama",
+      capitulos: 75,
+      año: 2024,
+      descripcion: "Drama intenso sobre amores prohibidos y consecuencias"
+    }
   ];
 
   // Combine admin novels with default novels
