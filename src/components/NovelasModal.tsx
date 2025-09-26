@@ -401,6 +401,7 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
       'Japón': '🇯🇵',
       'China': '🇨🇳',
       'Rusia': '🇷🇺',
+      'Cuba': '🇨🇺'
       'No especificado': '🌍'
     };
     return flags[country] || '🌍';

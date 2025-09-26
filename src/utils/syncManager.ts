@@ -52,6 +52,8 @@ export class SyncManager {
 
   // Sincronizar novelas entre admin y componentes
   syncNovels(novels: any[]): void {
+    console.log('SyncManager: Sincronizando novelas:', novels.length);
+    
     // Actualizar localStorage
     try {
       const adminState = localStorage.getItem('admin_system_state');
@@ -59,6 +61,7 @@ export class SyncManager {
         const state = JSON.parse(adminState);
         state.novels = novels;
         localStorage.setItem('admin_system_state', JSON.stringify(state));
+        console.log('SyncManager: admin_system_state actualizado');
       }
 
       const systemConfig = localStorage.getItem('system_config');
@@ -66,6 +69,7 @@ export class SyncManager {
         const config = JSON.parse(systemConfig);
         config.novels = novels;
         localStorage.setItem('system_config', JSON.stringify(config));
+        console.log('SyncManager: system_config actualizado');
       }
     } catch (error) {
       console.error('Error updating novels in localStorage:', error);
@@ -74,11 +78,26 @@ export class SyncManager {
     // Notificar a todos los listeners
     this.notify('novels', novels);
     
-    // Emitir eventos específicos para compatibilidad
+    // Emitir múltiples eventos para máxima compatibilidad
     const event = new CustomEvent('admin_state_change', {
       detail: { type: 'novels_sync', data: novels }
     });
     window.dispatchEvent(event);
+    
+    // Evento específico para novelas
+    const novelEvent = new CustomEvent('novels_updated', {
+      detail: { novels, timestamp: new Date().toISOString() }
+    });
+    window.dispatchEvent(novelEvent);
+    
+    // Evento de storage simulado para forzar actualización
+    const storageEvent = new StorageEvent('storage', {
+      key: 'admin_system_state',
+      newValue: JSON.stringify({ novels }),
+      oldValue: null,
+      storageArea: localStorage
+    });
+    window.dispatchEvent(storageEvent);
   }
 
   // Sincronizar precios

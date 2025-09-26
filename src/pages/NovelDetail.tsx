@@ -128,7 +128,8 @@ export function NovelDetail() {
       'Alemania': '🇩🇪',
       'Japón': '🇯🇵',
       'China': '🇨🇳',
-      'Rusia': '🇷🇺'
+      'Rusia': '🇷🇺',
+      'Cuba': '🇨🇺'
     };
     return flags[country] || '🌍';
   };

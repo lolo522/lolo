@@ -40,8 +40,6 @@ export function sendOrderToWhatsApp(orderData: OrderData): void {
           moviePrice: state.prices?.moviePrice || 80,
           seriesPrice: state.prices?.seriesPrice || 300,
           novelPricePerChapter: state.prices?.novelPricePerChapter || 5,
-          transferFeePercentage: state.prices?.transferFeePercentage || 10
-        };
       }
     } catch (error) {
       console.warn('No se pudieron obtener los precios del admin:', error);
