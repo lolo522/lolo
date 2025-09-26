@@ -1,37 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Settings, 
-  DollarSign, 
-  MapPin, 
-  BookOpen, 
-  Bell, 
-  Download, 
-  Upload, 
-  LogOut, 
-  Save, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  EyeOff, 
-  User, 
-  Lock,
-  Monitor,
-  Smartphone,
-  Globe,
-  Calendar,
-  Image,
-  FileText,
-  AlertCircle,
-  CheckCircle,
-  Info,
-  X,
-  Search,
-  Filter,
-  SortAsc,
-  SortDesc
-} from 'lucide-react';
+import { Settings, DollarSign, MapPin, BookOpen, Bell, Download, Upload, LogOut, Save, Plus, CreditCard as Edit, Trash2, Eye, EyeOff, User, Lock, Monitor, Smartphone, Globe, Calendar, Image, FileText, AlertCircle, CheckCircle, Info, X, Search, Filter, Import as SortAsc, Dessert as SortDesc } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 import JSZip from 'jszip';
 import { 
