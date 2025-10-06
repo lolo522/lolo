@@ -9,6 +9,8 @@ import { HeroCarousel } from '../components/HeroCarousel';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { NovelasModal } from '../components/NovelasModal';
+import { HorizontalCarousel } from '../components/HorizontalCarousel';
+import { FloatingNavButton } from '../components/FloatingNavButton';
 import type { Movie, TVShow } from '../types/movie';
 
 type TrendingTimeWindow = 'day' | 'week';
@@ -242,7 +244,7 @@ export function Home() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Trending Content */}
-        <section className="mb-12">
+        <section id="tendencias" className="mb-12 scroll-mt-20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <Flame className="mr-2 h-6 w-6 text-red-500" />
@@ -269,25 +271,23 @@ export function Home() {
               ))}
             </div>
           </div>
-          
-          {/* Movies and TV Shows - Netflix Style */}
-          <div className="relative overflow-x-auto scrollbar-hide -mx-4 sm:mx-0">
-            <div className="flex gap-3 sm:gap-4 px-4 sm:px-0 pb-4" style={{ minWidth: 'min-content' }}>
-              {trendingContent.map((item) => {
-                const itemType = 'title' in item ? 'movie' : 'tv';
-                return (
-                  <div key={`trending-${itemType}-${item.id}`} className="flex-shrink-0 w-40 sm:w-44 md:w-48 lg:w-52">
-                    <MovieCard item={item} type={itemType} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+
+          {/* Movies and TV Shows - Netflix Style with Carousel */}
+          <HorizontalCarousel>
+            {trendingContent.map((item) => {
+              const itemType = 'title' in item ? 'movie' : 'tv';
+              return (
+                <div key={`trending-${itemType}-${item.id}`} className="flex-shrink-0 w-40 sm:w-44 md:w-48 lg:w-52">
+                  <MovieCard item={item} type={itemType} />
+                </div>
+              );
+            })}
+          </HorizontalCarousel>
           
         </section>
 
         {/* Sección Dedicada: Novelas en Transmisión - Estilo Netflix */}
-        <section className="mb-12">
+        <section id="novelas-transmision" className="mb-12 scroll-mt-20">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
               <div className="bg-gradient-to-r from-red-500 to-pink-500 p-2 rounded-xl mr-3 shadow-lg">
@@ -308,8 +308,7 @@ export function Home() {
             <>
               {adminState.novels.filter(novel => novel.estado === 'transmision').length > 0 ? (
                 <>
-                  <div className="relative overflow-x-auto scrollbar-hide -mx-4 sm:mx-0">
-                    <div className="flex gap-3 sm:gap-4 px-4 sm:px-0 pb-4" style={{ minWidth: 'min-content' }}>
+                  <HorizontalCarousel>
                     {adminState.novels
                       .filter(novel => novel.estado === 'transmision')
                       .map((novel) => (
@@ -376,8 +375,7 @@ export function Home() {
                           </div>
                         </Link>
                       ))}
-                    </div>
-                  </div>
+                  </HorizontalCarousel>
                   {adminState.novels.filter(novel => novel.estado === 'transmision').length > 5 && (
                   <div className="text-center mt-6">
                     <button
@@ -426,7 +424,7 @@ export function Home() {
         </section>
 
         {/* Sección Dedicada: Novelas Finalizadas - Estilo Netflix */}
-        <section className="mb-12">
+        <section id="novelas-finalizadas" className="mb-12 scroll-mt-20">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
               <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-2 rounded-xl mr-3 shadow-lg">
@@ -447,8 +445,7 @@ export function Home() {
             <>
               {adminState.novels.filter(novel => novel.estado === 'finalizada').length > 0 ? (
                 <>
-                  <div className="relative overflow-x-auto scrollbar-hide -mx-4 sm:mx-0">
-                    <div className="flex gap-3 sm:gap-4 px-4 sm:px-0 pb-4" style={{ minWidth: 'min-content' }}>
+                  <HorizontalCarousel>
                     {adminState.novels
                       .filter(novel => novel.estado === 'finalizada')
                       .map((novel) => (
@@ -515,8 +512,7 @@ export function Home() {
                           </div>
                         </Link>
                       ))}
-                    </div>
-                  </div>
+                  </HorizontalCarousel>
                   {adminState.novels.filter(novel => novel.estado === 'finalizada').length > 5 && (
                   <div className="text-center mt-6">
                     <button
@@ -565,7 +561,7 @@ export function Home() {
         </section>
 
         {/* Popular Movies - Netflix Style */}
-        <section className="mb-12">
+        <section id="peliculas" className="mb-12 scroll-mt-20">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-2 rounded-xl mr-3 shadow-lg">
@@ -581,19 +577,17 @@ export function Home() {
               <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
-          <div className="relative overflow-x-auto scrollbar-hide -mx-4 sm:mx-0">
-            <div className="flex gap-3 sm:gap-4 px-4 sm:px-0 pb-4" style={{ minWidth: 'min-content' }}>
-              {popularMovies.map((movie) => (
-                <div key={movie.id} className="flex-shrink-0 w-40 sm:w-44 md:w-48 lg:w-52">
-                  <MovieCard item={movie} type="movie" />
-                </div>
-              ))}
-            </div>
-          </div>
+          <HorizontalCarousel>
+            {popularMovies.map((movie) => (
+              <div key={movie.id} className="flex-shrink-0 w-40 sm:w-44 md:w-48 lg:w-52">
+                <MovieCard item={movie} type="movie" />
+              </div>
+            ))}
+          </HorizontalCarousel>
         </section>
 
         {/* Popular TV Shows - Netflix Style */}
-        <section className="mb-12">
+        <section id="series" className="mb-12 scroll-mt-20">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
               <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-2 rounded-xl mr-3 shadow-lg">
@@ -609,19 +603,17 @@ export function Home() {
               <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
-          <div className="relative overflow-x-auto scrollbar-hide -mx-4 sm:mx-0">
-            <div className="flex gap-3 sm:gap-4 px-4 sm:px-0 pb-4" style={{ minWidth: 'min-content' }}>
-              {popularTVShows.map((show) => (
-                <div key={show.id} className="flex-shrink-0 w-40 sm:w-44 md:w-48 lg:w-52">
-                  <MovieCard item={show} type="tv" />
-                </div>
-              ))}
-            </div>
-          </div>
+          <HorizontalCarousel>
+            {popularTVShows.map((show) => (
+              <div key={show.id} className="flex-shrink-0 w-40 sm:w-44 md:w-48 lg:w-52">
+                <MovieCard item={show} type="tv" />
+              </div>
+            ))}
+          </HorizontalCarousel>
         </section>
 
         {/* Popular Anime - Netflix Style */}
-        <section className="mb-12">
+        <section id="anime" className="mb-12 scroll-mt-20">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
               <div className="bg-gradient-to-r from-pink-500 to-pink-600 p-2 rounded-xl mr-3 shadow-lg">
@@ -637,15 +629,13 @@ export function Home() {
               <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
-          <div className="relative overflow-x-auto scrollbar-hide -mx-4 sm:mx-0">
-            <div className="flex gap-3 sm:gap-4 px-4 sm:px-0 pb-4" style={{ minWidth: 'min-content' }}>
-              {popularAnime.map((anime) => (
-                <div key={anime.id} className="flex-shrink-0 w-40 sm:w-44 md:w-48 lg:w-52">
-                  <MovieCard item={anime} type="tv" />
-                </div>
-              ))}
-            </div>
-          </div>
+          <HorizontalCarousel>
+            {popularAnime.map((anime) => (
+              <div key={anime.id} className="flex-shrink-0 w-40 sm:w-44 md:w-48 lg:w-52">
+                <MovieCard item={anime} type="tv" />
+              </div>
+            ))}
+          </HorizontalCarousel>
         </section>
 
         {/* Last Update Info (Hidden from users) */}
@@ -655,10 +645,13 @@ export function Home() {
       </div>
       
       {/* Modal de Novelas */}
-      <NovelasModal 
-        isOpen={showNovelasModal} 
-        onClose={() => setShowNovelasModal(false)} 
+      <NovelasModal
+        isOpen={showNovelasModal}
+        onClose={() => setShowNovelasModal(false)}
       />
+
+      {/* Floating Navigation Button */}
+      <FloatingNavButton />
     </div>
   );
 }
