@@ -66,36 +66,26 @@ export function Anime() {
             Descubre los mejores animes japoneses más populares y mejor valorados.
           </p>
 
-          {/* Category Filter - Responsive */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="hidden sm:flex items-center space-x-1 bg-white rounded-lg p-1 shadow-sm w-full sm:w-fit">
-              <Filter className="h-4 w-4 text-gray-500 ml-2" />
+          {/* Category Filter */}
+          <div className="bg-white rounded-lg p-3 sm:p-4 shadow-sm w-full">
+            <div className="flex items-center mb-3">
+              <Filter className="h-4 w-4 text-gray-500 mr-2" />
+              <span className="text-sm font-medium text-gray-700">Categoría:</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
               {Object.entries(categoryTitles).map(([key, title]) => (
                 <button
                   key={key}
                   onClick={() => handleCategoryChange(key as AnimeCategory)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 ${
                     category === key
-                      ? 'bg-pink-600 text-white'
-                      : 'text-gray-600 hover:text-pink-600 hover:bg-pink-50'
+                      ? 'bg-pink-600 text-white shadow-md transform scale-105'
+                      : 'text-gray-600 hover:text-pink-600 hover:bg-pink-50 border border-gray-200'
                   }`}
                 >
                   {title}
                 </button>
               ))}
-            </div>
-
-            {/* Mobile/Tablet Dropdown */}
-            <div className="sm:hidden bg-white rounded-lg p-1 shadow-sm">
-              <select
-                value={category}
-                onChange={(e) => handleCategoryChange(e.target.value as AnimeCategory)}
-                className="w-full px-4 py-2 rounded-md text-sm font-medium bg-pink-600 text-white border-none focus:outline-none focus:ring-2 focus:ring-pink-500"
-              >
-                {Object.entries(categoryTitles).map(([key, title]) => (
-                  <option key={key} value={key}>{title}</option>
-                ))}
-              </select>
             </div>
           </div>
         </div>

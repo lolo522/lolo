@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, Import as SortAsc, Dessert as SortDesc, Smartphone, FileText, Send, ShoppingCart, Upload, Image, Trash2, CreditCard as Edit, Save, Camera, Globe } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { NetflixNovelSection } from './NetflixNovelSection';
 import type { NovelCartItem } from '../types/movie';
 
 interface Novela {
@@ -128,18 +129,18 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
     }
   }, [adminNovels]);
 
-  // Filter novels function with improved search
+  // Filter novels function
   const getFilteredNovelas = () => {
     let filtered = novelasWithPayment.filter(novela => {
-      // Improved search: normalize and handle spaces better
-      const normalizedTitle = novela.titulo.toLowerCase().trim().replace(/\s+/g, ' ');
-      const normalizedSearch = searchTerm.toLowerCase().trim().replace(/\s+/g, ' ');
-      const matchesSearch = normalizedTitle.includes(normalizedSearch);
+      // Mejorar búsqueda para permitir espacios y ser más preciso
+      const searchWords = searchTerm.toLowerCase().trim().split(/\s+/);
+      const tituloLower = novela.titulo.toLowerCase();
+      const matchesSearch = searchTerm === '' || searchWords.every(word => tituloLower.includes(word));
       const matchesGenre = selectedGenre === '' || novela.genero === selectedGenre;
       const matchesYear = selectedYear === '' || novela.año.toString() === selectedYear;
       const matchesCountry = selectedCountry === '' || novela.pais === selectedCountry;
       const matchesStatus = selectedStatus === '' || novela.estado === selectedStatus;
-
+      
       return matchesSearch && matchesGenre && matchesYear && matchesCountry && matchesStatus;
     });
 
@@ -168,6 +169,11 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
   };
 
   const filteredNovelas = getFilteredNovelas();
+
+  const handleNovelClick = (novelaId: number) => {
+    // Navigate to novel detail page
+    window.location.href = `/novel/${novelaId}`;
+  };
 
   const handleNovelToggle = (novelaId: number) => {
     setSelectedNovelas(prev => {
@@ -419,11 +425,12 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
 
         <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
           <div className="p-3 sm:p-6">
+
             {/* Catalog options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
+            <div className="mb-6">
               <button
                 onClick={downloadNovelList}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-4 sm:p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3"
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-4 sm:p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3"
               >
                 <div className="bg-white/20 p-3 rounded-full">
                   <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -431,19 +438,6 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
                 <div className="text-center sm:text-left">
                   <div className="text-sm sm:text-lg font-bold">Descargar Catálogo</div>
                   <div className="text-xs sm:text-sm opacity-90">Lista completa de novelas</div>
-                </div>
-              </button>
-              
-              <button
-                onClick={() => setShowNovelList(!showNovelList)}
-                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white p-4 sm:p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3"
-              >
-                <div className="bg-white/20 p-3 rounded-full">
-                  <Search className="h-5 w-5 sm:h-6 sm:w-6" />
-                </div>
-                <div className="text-center sm:text-left">
-                  <div className="text-sm sm:text-lg font-bold">Ver y Seleccionar</div>
-                  <div className="text-xs sm:text-sm opacity-90">Elegir novelas específicas</div>
                 </div>
               </button>
             </div>
@@ -612,85 +606,39 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
                   </div>
                 )}
 
-                <div className="max-h-80 sm:max-h-96 overflow-y-auto p-3 sm:p-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                {/* Netflix-style Catalog View */}
+                <div className="p-3 sm:p-6">
+                  <div className="space-y-8">
                     {filteredNovelas.length > 0 ? (
-                      filteredNovelas.map((novela) => {
-                      const isSelected = selectedNovelas.includes(novela.id);
-                      const baseCost = novela.capitulos * novelPricePerChapter;
-                      const transferCost = Math.round(baseCost * (1 + transferFeePercentage / 100));
-                      const finalCost = novela.paymentType === 'transfer' ? transferCost : baseCost;
-                      
-                      return (
-                        <div
-                          key={novela.id}
-                          onClick={() => handleNovelToggle(novela.id)}
-                          className={`group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-300 transform ${
-                            isSelected
-                              ? 'ring-4 ring-purple-500 scale-[1.02] shadow-2xl'
-                              : 'hover:scale-105 hover:shadow-xl'
-                          }`}
-                        >
-                          {/* Novel Image */}
-                          <div className="relative w-full aspect-[2/3]">
-                            <img
-                              src={getNovelImage(novela)}
-                              alt={novela.titulo}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=400&fit=crop';
-                              }}
-                            />
-
-                            {/* Overlay gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                            {/* Status badge */}
-                            <div className="absolute top-2 left-2 z-10">
-                              <span className={`px-2 py-1 rounded-full text-xs font-bold text-white shadow-lg ${
-                                novela.estado === 'transmision'
-                                  ? 'bg-red-500'
-                                  : 'bg-green-500'
-                              }`}>
-                                {novela.estado === 'transmision' ? 'EN VIVO' : 'COMPLETA'}
+                      <>
+                        {/* Novelas en Transmisión */}
+                        {filteredNovelas.filter(n => n.estado === 'transmision').length > 0 && (
+                          <div>
+                            <h3 className="text-lg sm:text-xl font-bold text-red-600 mb-4 flex items-center">
+                              <span className="bg-red-100 p-2 rounded-lg mr-3">
+                                📡
                               </span>
-                            </div>
-
-                            {/* Selection indicator */}
-                            <div className="absolute top-2 right-2 z-10">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  handleNovelToggle(novela.id);
-                                }}
-                                className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-2 border-white rounded-md bg-white/90"
-                              />
-                            </div>
-
-                            {/* Info overlay on hover */}
-                            <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                              <h3 className="text-white font-bold text-sm mb-1 line-clamp-2">{novela.titulo}</h3>
-                              <div className="flex items-center justify-between text-white text-xs mb-2">
-                                <span className="bg-white/20 px-2 py-0.5 rounded-full">{novela.año}</span>
-                                <span className="bg-white/20 px-2 py-0.5 rounded-full">{novela.capitulos} cap.</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-white/90 text-xs">{getCountryFlag(novela.pais)}</span>
-                                <span className="text-white font-bold text-sm">
-                                  ${(novela.capitulos * novelPricePerChapter).toLocaleString()}
-                                </span>
-                              </div>
-                            </div>
+                              Novelas en Transmisión
+                            </h3>
+                            <NetflixNovelSection novels={filteredNovelas.filter(n => n.estado === 'transmision')} />
                           </div>
-                        </div>
-                      );
-                      })
+                        )}
+
+                        {/* Novelas Finalizadas */}
+                        {filteredNovelas.filter(n => n.estado === 'finalizada').length > 0 && (
+                          <div>
+                            <h3 className="text-lg sm:text-xl font-bold text-green-600 mb-4 flex items-center">
+                              <span className="bg-green-100 p-2 rounded-lg mr-3">
+                                ✅
+                              </span>
+                              Novelas Finalizadas
+                            </h3>
+                            <NetflixNovelSection novels={filteredNovelas.filter(n => n.estado === 'finalizada')} />
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <div className="text-center py-12">
-                        <BookOpen className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mx-auto mb-4 sm:mb-6" />
                         <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">
                           No se encontraron novelas
                         </h3>
