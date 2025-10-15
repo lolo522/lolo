@@ -620,7 +620,16 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
                               </span>
                               Novelas en Transmisión
                             </h3>
-                            <NetflixNovelSection novels={filteredNovelas.filter(n => n.estado === 'transmision')} />
+                            <NetflixNovelSection
+                              novels={filteredNovelas
+                                .filter(n => n.estado === 'transmision')
+                                .sort((a, b) => {
+                                  const dateA = new Date((a as any).createdAt || 0).getTime();
+                                  const dateB = new Date((b as any).createdAt || 0).getTime();
+                                  return dateB - dateA;
+                                })
+                              }
+                            />
                           </div>
                         )}
 
@@ -633,7 +642,16 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
                               </span>
                               Novelas Finalizadas
                             </h3>
-                            <NetflixNovelSection novels={filteredNovelas.filter(n => n.estado === 'finalizada')} />
+                            <NetflixNovelSection
+                              novels={filteredNovelas
+                                .filter(n => n.estado === 'finalizada')
+                                .sort((a, b) => {
+                                  const dateA = new Date((a as any).createdAt || 0).getTime();
+                                  const dateB = new Date((b as any).createdAt || 0).getTime();
+                                  return dateB - dateA;
+                                })
+                              }
+                            />
                           </div>
                         )}
                       </>
