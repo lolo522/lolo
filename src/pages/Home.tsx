@@ -307,6 +307,11 @@ export function Home() {
                 >
                   {adminState.novels
                     .filter(novel => novel.estado === 'transmision')
+                    .sort((a, b) => {
+                      const dateA = new Date(a.createdAt || 0).getTime();
+                      const dateB = new Date(b.createdAt || 0).getTime();
+                      return dateB - dateA; // Las más recientes primero
+                    })
                     .map((novel) => (
                       <Link
                         to={`/novel/${novel.id}`}
@@ -425,6 +430,11 @@ export function Home() {
                 >
                   {adminState.novels
                     .filter(novel => novel.estado === 'finalizada')
+                    .sort((a, b) => {
+                      const dateA = new Date(a.createdAt || 0).getTime();
+                      const dateB = new Date(b.createdAt || 0).getTime();
+                      return dateB - dateA; // Las más recientes primero
+                    })
                     .map((novel) => (
                       <Link
                         to={`/novel/${novel.id}`}
